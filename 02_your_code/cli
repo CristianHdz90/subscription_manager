@@ -9,13 +9,21 @@ fi
 
 if [ "upgrade" == $1 ]; then
     echo "Upgrading with args: ${@:2}"
-    # Use this line to call your code
+    if [ -z "$2" ] || [ -z "$3" ]; then
+    echo "Error: missing arguments uuid and/or plan"
+    exit 1;
+    fi
+    python run_subs_manager.py upgrade $2 $3
     exit;
 fi
 
 if [ "downgrade" == $1 ]; then
     echo "Downgrading with args: ${@:2}"
-    # Use this line to call your code
+    if [ -z "$2" ] || [ -z "$3" ]; then
+    echo "Error: missing arguments uuid and/or plan"
+    exit 1;
+    fi
+    python run_subs_manager.py downgrade $2 $3
     exit;
 fi
 
