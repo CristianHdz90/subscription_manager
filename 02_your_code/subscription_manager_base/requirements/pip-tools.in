@@ -1,0 +1,3 @@
+# Utility for managing pip dependencies.
+
+pip-tools                   # For maintaining and organizing dependencies.

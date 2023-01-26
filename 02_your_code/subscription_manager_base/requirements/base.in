@@ -1,0 +1,4 @@
+# Main requirements for the subscription manager library.
+
+pytz                     # For timezone support
+requests                 # For making HTTP requests
