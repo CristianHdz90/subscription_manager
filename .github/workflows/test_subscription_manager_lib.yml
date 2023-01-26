@@ -22,11 +22,7 @@ jobs:
           python -m pip install --upgrade pip
           cd 02_your_code/subscription_manager_base/
           pip install -r requirements/test.txt
-      - name: Check format with Black
+      - name: Unit tests
         run: |
           cd 02_your_code/subscription_manager_base/
-          black --check subscription_manager/
-      - name: Lint with pylint
-        run: |
-          cd 02_your_code/subscription_manager_base/
-          pylint subscription_manager/
+          pytest --cov="."  --cov-report term-missing --cov-fail-under=90
