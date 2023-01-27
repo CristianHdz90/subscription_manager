@@ -1,9 +1,7 @@
 
 if [ "setup" == $1 ]; then
     echo "Running setup"
-    # Replace this with any commands you need to setup your code
-    # For example:
-    # pip install -r requirements.txt
+    pip install -r subscription_manager_base/requirements/base.txt
     exit;
 fi
 
