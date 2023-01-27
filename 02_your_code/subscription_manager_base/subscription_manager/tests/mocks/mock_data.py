@@ -25,8 +25,6 @@ mock_customer_data = {
     },
 }
 
-"9f5c5a5f-4f4c-4a4c-a5f5-5c5f9f4f4c4a"
-
 mock_manager_arguments = {
     "new_subscription": "basic",
     "customer_id": "9f5c5a5f-4f4c-4a4c-a5f5-5c5f9f4f4c4a",

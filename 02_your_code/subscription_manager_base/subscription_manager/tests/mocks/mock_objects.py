@@ -16,7 +16,7 @@ class MockResponse:  # pylint: disable=R0903
         Initialize a new instance of the class with the given
         status code and response data.
 
-        Args:
+        Attributes:
         - status_code (int): The HTTP status code of the mock response.
         - response_data (dict): Data to be returned in the response body.
         """

@@ -48,12 +48,12 @@ class TestSubscriptionManager(TestCase):
     def test_constructor_takes_the_customer_data_api_url_argument(self):
         """
         Tests if the constructor of the subscription manager
-        takes a api_url argument.
+        takes a customer_data_api_url argument.
         """
         api_url = "http://localhost:8010/api/v1/customerdata/"
         args = ["", "", api_url, {}]
         manager = SubscriptionManager(*args)
-        self.assertEqual(manager.api_url, api_url)
+        self.assertEqual(manager.customer_data_api_url, api_url)
 
     def test_constructor_takes_the_subscriptions_argument(self):
         """
