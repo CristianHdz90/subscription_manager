@@ -114,8 +114,8 @@ class TestSubscriptionManager(TestCase):  # pylint: disable=R0904
             manager = self.testing_subscription_manager
             manager.get_customer_data()
 
-            self.assertTrue(hasattr(manager, "customer_data"))
-            self.assertEqual(manager.customer_data, self.testing_customer_data)
+        self.assertTrue(hasattr(manager, "customer_data"))
+        self.assertEqual(manager.customer_data, self.testing_customer_data)
 
     def test_get_customer_data_logs_an_error_when_cannot_get_customer_data(self):
         """

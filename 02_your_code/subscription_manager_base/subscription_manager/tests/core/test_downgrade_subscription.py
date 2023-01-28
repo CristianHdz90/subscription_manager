@@ -92,9 +92,9 @@ class TestDowngradeSubscription(TestCase):
         with mock.patch.multiple("requests", **kwargs):
             downgrade_manager.downgrade()
 
-            self.assertTrue(hasattr(downgrade_manager, "customer_data"))
-            self.assertIn("id", downgrade_manager.customer_data)
-            self.assertIn("data", downgrade_manager.customer_data)
+        self.assertTrue(hasattr(downgrade_manager, "customer_data"))
+        self.assertIn("id", downgrade_manager.customer_data)
+        self.assertIn("data", downgrade_manager.customer_data)
 
     def test_downgrade_method_removes_upgrade_date_keyword_from_customer_data(self):
         """
@@ -109,7 +109,7 @@ class TestDowngradeSubscription(TestCase):
         with mock.patch.multiple("requests", **kwargs):
             downgrade_manager.downgrade()
 
-            self.assertNotIn("UPGRADE_DATE", downgrade_manager.customer_data["data"])
+        self.assertNotIn("UPGRADE_DATE", downgrade_manager.customer_data["data"])
 
     def test_downgrade_method_adds_downgrade_date_keyword_to_customer_data(self):
         """
@@ -124,7 +124,7 @@ class TestDowngradeSubscription(TestCase):
         with mock.patch.multiple("requests", **kwargs):
             downgrade_manager.downgrade()
 
-            self.assertIn("DOWNGRADE_DATE", downgrade_manager.customer_data["data"])
+        self.assertIn("DOWNGRADE_DATE", downgrade_manager.customer_data["data"])
 
     def test_downgrade_method_changes_subscription_in_customer_data(self):
         """
@@ -139,8 +139,8 @@ class TestDowngradeSubscription(TestCase):
         with mock.patch.multiple("requests", **kwargs):
             downgrade_manager.downgrade()
 
-            subscription = downgrade_manager.customer_data["data"]["SUBSCRIPTION"]
-            self.assertEqual(subscription, "free")
+        subscription = downgrade_manager.customer_data["data"]["SUBSCRIPTION"]
+        self.assertEqual(subscription, "free")
 
     def test_downgrade_method_returns_report_of_changes(self):
         """

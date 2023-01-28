@@ -92,9 +92,9 @@ class TestUpgradeSubscription(TestCase):
         with mock.patch.multiple("requests", **kwargs):
             upgrade_manager.upgrade()
 
-            self.assertTrue(hasattr(upgrade_manager, "customer_data"))
-            self.assertIn("id", upgrade_manager.customer_data)
-            self.assertIn("data", upgrade_manager.customer_data)
+        self.assertTrue(hasattr(upgrade_manager, "customer_data"))
+        self.assertIn("id", upgrade_manager.customer_data)
+        self.assertIn("data", upgrade_manager.customer_data)
 
     def test_upgrade_method_removes_downgrade_date_keyword_from_customer_data(self):
         """
@@ -109,7 +109,7 @@ class TestUpgradeSubscription(TestCase):
         with mock.patch.multiple("requests", **kwargs):
             upgrade_manager.upgrade()
 
-            self.assertNotIn("DOWNGRADE_DATE", upgrade_manager.customer_data["data"])
+        self.assertNotIn("DOWNGRADE_DATE", upgrade_manager.customer_data["data"])
 
     def test_upgrade_method_adds_upgrade_date_keyword_to_customer_data(self):
         """
@@ -123,7 +123,7 @@ class TestUpgradeSubscription(TestCase):
         with mock.patch.multiple("requests", **kwargs):
             upgrade_manager.upgrade()
 
-            self.assertIn("UPGRADE_DATE", upgrade_manager.customer_data["data"])
+        self.assertIn("UPGRADE_DATE", upgrade_manager.customer_data["data"])
 
     def test_upgrade_method_changes_subscription_in_customer_data(self):
         """
@@ -138,8 +138,8 @@ class TestUpgradeSubscription(TestCase):
         with mock.patch.multiple("requests", **kwargs):
             upgrade_manager.upgrade()
 
-            subscription = upgrade_manager.customer_data["data"]["SUBSCRIPTION"]
-            self.assertEqual(subscription, "premium")
+        subscription = upgrade_manager.customer_data["data"]["SUBSCRIPTION"]
+        self.assertEqual(subscription, "premium")
 
     def test_upgrade_method_returns_report_of_changes(self):
         """
