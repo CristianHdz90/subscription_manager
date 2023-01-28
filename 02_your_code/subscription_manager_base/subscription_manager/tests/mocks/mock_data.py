@@ -37,3 +37,13 @@ subscription_levels = {
     "mid_subscription": 2,
     "high_subscription": 3,
 }
+
+subscription_manager_attributes = [
+    "customer_id",
+    "new_subscription",
+    "customer_data_api_url",
+    "subscriptions",
+    "customer_data",
+    "old_subscription",
+    "changes_sent",
+]

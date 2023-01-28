@@ -5,6 +5,7 @@ Core classes of the subscription manager library.
 import json
 
 import requests
+from subscription_manager_base.subscription_manager.logging_config import logging
 from subscription_manager_base.subscription_manager.utils import get_standard_datetime
 
 
@@ -24,7 +25,8 @@ class SubscriptionManager:
         - customer_data_api_url (str): The URL of the API used to retrieve customer data.
         - subscriptions (dict): Dictionary with the available subscription plans and their levels.
         - customer_data (dict): Dictionary to store the customer data.
-        - old_subscription (str): The old subscription of the client to be replaced.
+        - changes_sent (bool): Check to confirm when the changes were correctly sent to the API.
+        - old_subscription (str): The old subscription of the customer to be replaced.
         """
         self.customer_id = customer_id
         self.new_subscription = new_subscription
@@ -32,6 +34,7 @@ class SubscriptionManager:
         self.subscriptions = subscriptions
         self.customer_data = {}
         self.old_subscription = ""
+        self.changes_sent = False
 
     def get_url(self):
         """
@@ -46,12 +49,24 @@ class SubscriptionManager:
         customer data API.
         """
         url = self.get_url()
-        response = requests.get(url, timeout=5)
-        if response.status_code != 200:
-            raise ValueError("Failed to retrieve customer data")
-        self.customer_data = json.loads(response.text)
 
-        self.old_subscription = self.customer_data["data"]["SUBSCRIPTION"]
+        try:
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                self.customer_data = json.loads(response.text)
+                self.old_subscription = self.customer_data["data"]["SUBSCRIPTION"]
+            else:
+                message = (
+                    f"Failed to retrieve the customer data "
+                    f"[{response.status_code} {response.reason}]."
+                )
+                logging.error(message)
+        except requests.exceptions.RequestException:
+            message = (
+                "The customer data API is currently "
+                "unavailable, please try again later."
+            )
+            logging.error(message)
 
     def delete_item(self, key):
         """
@@ -71,9 +86,22 @@ class SubscriptionManager:
         Sends the final changes to the customer data API.
         """
         url = self.get_url()
-        response = requests.put(url, json=self.customer_data, timeout=5)
-        if response.status_code != 200:
-            raise ValueError("Failed to update the customer data")
+        try:
+            response = requests.put(url, json=self.customer_data, timeout=5)
+            if response.status_code == 200:
+                self.changes_sent = True
+            else:
+                message = (
+                    f"Failed to update the customer data "
+                    f"[{response.status_code} {response.reason}]."
+                )
+                logging.error(message)
+        except requests.exceptions.RequestException:
+            message = (
+                "The customer data API is currently "
+                "unavailable, please try again later."
+            )
+            logging.error(message)
 
     def subscription_is_valid(self):
         """
@@ -86,7 +114,8 @@ class SubscriptionManager:
             "The new subscription level provided is not "
             "in the available subscriptions."
         )
-        raise ValueError(message)
+        logging.error(message)
+        return False
 
     def report_of_changes(self, action):
         """
@@ -129,11 +158,13 @@ class UpgradeSubscription(SubscriptionManager):
 
         if new_subscription_level > old_subscription_level:
             return True
+
         message = (
-            "Upgrade failed: The subscription level provided "
-            "must be greater than old subscription level."
+            f"Attempted to upgrade from {self.old_subscription} "
+            f"to {self.new_subscription}."
         )
-        raise ValueError(message)
+        logging.error(message)
+        return False
 
     def upgrade(self):
         """
@@ -141,14 +172,16 @@ class UpgradeSubscription(SubscriptionManager):
         data of a specific customer.
         """
         self.get_customer_data()
-        if self.subscription_is_valid() and self.upgrade_is_valid():
-            self.delete_item("DOWNGRADE_DATE")
-            self.add_or_update_item("UPGRADE_DATE", get_standard_datetime())
-            self.add_or_update_item("SUBSCRIPTION", self.new_subscription)
+        if self.customer_data:
+            if self.subscription_is_valid() and self.upgrade_is_valid():
+                self.delete_item("DOWNGRADE_DATE")
+                self.add_or_update_item("UPGRADE_DATE", get_standard_datetime())
+                self.add_or_update_item("SUBSCRIPTION", self.new_subscription)
 
-            self.send_changes_to_customer_data_api()
-            return self.report_of_changes("UPGRADED")
-        return None
+                self.send_changes_to_customer_data_api()
+                if self.changes_sent:
+                    return self.report_of_changes("UPGRADED")
+        return "Failed to upgrade."
 
 
 class DowngradeSubscription(SubscriptionManager):
@@ -167,11 +200,13 @@ class DowngradeSubscription(SubscriptionManager):
 
         if new_subscription_level < old_subscription_level:
             return True
+
         message = (
-            "Downgrade failed: The subscription level provided "
-            "must be lower than old subscription level."
+            f"Attempted to downgrade from {self.old_subscription} "
+            f"to {self.new_subscription}."
         )
-        raise ValueError(message)
+        logging.error(message)
+        return False
 
     def downgrade(self):
         """
@@ -179,14 +214,16 @@ class DowngradeSubscription(SubscriptionManager):
         data of a specific customer.
         """
         self.get_customer_data()
-        if self.subscription_is_valid() and self.downgrade_is_valid():
+        if self.customer_data:
+            if self.subscription_is_valid() and self.downgrade_is_valid():
 
-            self.delete_item("UPGRADE_DATE")
-            if self.new_subscription_level_is_free():
-                self.disable_features()
-            self.add_or_update_item("DOWNGRADE_DATE", get_standard_datetime())
-            self.add_or_update_item("SUBSCRIPTION", self.new_subscription)
+                self.delete_item("UPGRADE_DATE")
+                if self.new_subscription_level_is_free():
+                    self.disable_features()
+                self.add_or_update_item("DOWNGRADE_DATE", get_standard_datetime())
+                self.add_or_update_item("SUBSCRIPTION", self.new_subscription)
 
-            self.send_changes_to_customer_data_api()
-            return self.report_of_changes("DOWNGRADED")
-        return None
+                self.send_changes_to_customer_data_api()
+                if self.changes_sent:
+                    return self.report_of_changes("DOWNGRADED")
+        return "Failed to downgrade."

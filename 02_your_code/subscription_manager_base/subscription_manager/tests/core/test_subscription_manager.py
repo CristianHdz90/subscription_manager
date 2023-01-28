@@ -8,13 +8,14 @@ from subscription_manager_base.subscription_manager.core import SubscriptionMana
 from subscription_manager_base.subscription_manager.tests.mocks.mock_data import (
     mock_customer_data,
     mock_manager_arguments,
+    subscription_manager_attributes,
 )
 from subscription_manager_base.subscription_manager.tests.mocks.mock_objects import (
     MockResponse,
 )
 
 
-class TestSubscriptionManager(TestCase):
+class TestSubscriptionManager(TestCase):  # pylint: disable=R0904
     """
     Tests for the subscription manager class.
     """
@@ -64,6 +65,31 @@ class TestSubscriptionManager(TestCase):
         manager = SubscriptionManager("", "", "", subscriptions)
         self.assertEqual(manager.subscriptions, subscriptions)
 
+    def test_initial_attributes_of_subscription_manager_instance(self):
+        """
+        Tests if the SubscriptionManager instance is initialized
+        with all the attributes it will use.
+        """
+        instance = SubscriptionManager(**mock_manager_arguments)
+        for attr in subscription_manager_attributes:
+            self.assertTrue(hasattr(instance, attr))
+
+    def test_default_value_for_changes_sent_attribute_is_false(self):
+        """
+        Tests if the attribute 'changes_sent' of the SubscriptionManager
+        instance is initialized in False.
+        """
+        instance = SubscriptionManager(**mock_manager_arguments)
+        self.assertFalse(instance.changes_sent)
+
+    def test_default_value_for_customer_data_attribute_is_empty_dictionary(self):
+        """
+        Tests if the attribute 'customer_data' of the SubscriptionManager
+        instance is initialized with an empty dictionary.
+        """
+        instance = SubscriptionManager(**mock_manager_arguments)
+        self.assertEqual(instance.customer_data, {})
+
     def test_get_url_returns_correct_url_given_customer_id(self):
         """
         Tests if the get_utl method returns the full URL
@@ -91,17 +117,44 @@ class TestSubscriptionManager(TestCase):
             self.assertTrue(hasattr(manager, "customer_data"))
             self.assertEqual(manager.customer_data, self.testing_customer_data)
 
-    def test_get_customer_data_raises_error_when_cannot_get_customer_data(self):
+    def test_get_customer_data_logs_an_error_when_cannot_get_customer_data(self):
         """
-        Tests if the get_customer_data method raises and error when
+        Tests if the get_customer_data method logs an error when
         it could not get the customer data from the customer data API.
         """
-        mock_response = MockResponse(status_code=404)
+        status_code = 404
+        reason = "Not Found"
+
+        mock_response = MockResponse(status_code, reason)
         use_mock_response = mock.patch("requests.get", return_value=mock_response)
 
         with use_mock_response:
+            with self.assertLogs() as logs_captured:
+                manager = self.testing_subscription_manager
+                manager.get_customer_data()
+
+        expected_message = (
+            f"Failed to retrieve the customer data [{status_code} {reason}]."
+        )
+        self.assertEqual(len(logs_captured.records), 1)
+        self.assertEqual(logs_captured.records[0].getMessage(), expected_message)
+
+    def test_get_customer_data_logs_an_error_when_customer_data_api_is_unavailable(
+        self,
+    ):
+        """
+        Tests if the get_customer_data method logs an error when
+        the customer data API is not responding.
+        """
+        with self.assertLogs() as logs_captured:
             manager = self.testing_subscription_manager
-            self.assertRaises(ValueError, manager.get_customer_data)
+            manager.get_customer_data()
+
+        expected_message = (
+            "The customer data API is currently unavailable, please try again later."
+        )
+        self.assertEqual(len(logs_captured.records), 1)
+        self.assertEqual(logs_captured.records[0].getMessage(), expected_message)
 
     def test_get_customer_data_saves_old_subscription_in_the_subscription_manager(self):
         """
@@ -159,19 +212,65 @@ class TestSubscriptionManager(TestCase):
         self.assertIn("SUBSCRIPTION", manager.customer_data["data"])
         self.assertEqual(manager.customer_data["data"]["SUBSCRIPTION"], "basic")
 
-    def test_send_changes_to_customer_data_api_raises_error(self):
+    def test_send_changes_to_customer_data_api_logs_error_when_api_returns_error(
+        self,
+    ):
         """
-        Tests if the send_changes_to_customer_data_api method raises an
-        error when the API did not take the customer data successfully.
+        Tests if the send_changes_to_customer_data_api method logs an
+        error when the API did not apply the changes to the customer data.
         """
-        manager = self.testing_subscription_manager
-        manager.customer_data = self.testing_customer_data
-        mock_response = MockResponse(status_code=400)
+        status_code = 400
+        reason = "Bad Request"
 
+        mock_response = MockResponse(status_code, reason)
         use_mock_response = mock.patch("requests.put", return_value=mock_response)
+
         with use_mock_response:
-            send_changes = manager.send_changes_to_customer_data_api
-            self.assertRaises(ValueError, send_changes)
+            with self.assertLogs() as logs_captured:
+                manager = self.testing_subscription_manager
+                manager.send_changes_to_customer_data_api()
+
+        expected_message = (
+            f"Failed to update the customer data [{status_code} {reason}]."
+        )
+        self.assertEqual(len(logs_captured.records), 1)
+        self.assertEqual(logs_captured.records[0].message, expected_message)
+
+    def test_send_changes_to_customer_data_api_updates_the_changes_sent_attribute_to_true(
+        self,
+    ):
+        """
+        Tests if the "changes_sent" attribute is updated to True when
+        the changes are successfully sent to the customer data API.
+        """
+        status_code = 200
+        reason = "OK"
+        manager = self.testing_subscription_manager
+
+        mock_response = MockResponse(status_code, reason)
+        use_mock_response = mock.patch("requests.put", return_value=mock_response)
+
+        with use_mock_response:
+            manager.send_changes_to_customer_data_api()
+
+        self.assertTrue(manager.changes_sent)
+
+    def test_send_changes_to_customer_data_api_logs_error_when_api_is_unavailable(
+        self,
+    ):
+        """
+        Tests if the send_changes_to_customer_data_api method logs an
+        error when the customer data API is not responding.
+        """
+        with self.assertLogs() as logs_captured:
+            manager = self.testing_subscription_manager
+            manager.send_changes_to_customer_data_api()
+
+        expected_message = (
+            "The customer data API is currently unavailable, please try again later."
+        )
+        self.assertEqual(len(logs_captured.records), 1)
+        self.assertEqual(logs_captured.records[0].getMessage(), expected_message)
 
     def test_subscription_is_valid_returns_true(self):
         """
@@ -183,15 +282,33 @@ class TestSubscriptionManager(TestCase):
         manager.new_subscription = "basic"
         self.assertTrue(manager.subscription_is_valid())
 
-    def test_subscription_is_valid_raises_error(self):
+    def test_subscription_is_valid_returns_false(self):
         """
         Tests if the subscription_is_valid method returns
-        True when the new subscription is not in the group
+        False when the new subscription is not in the group
         of available subscriptions.
         """
         manager = self.testing_subscription_manager
         manager.new_subscription = "fake_subscription"
-        self.assertRaises(ValueError, manager.subscription_is_valid)
+        self.assertFalse(manager.subscription_is_valid())
+
+    def test_subscription_is_valid_logs_an_error(self):
+        """
+        Tests if the subscription_is_valid method logs an
+        error when the new subscription is not in the group
+        of available subscriptions.
+        """
+        manager = self.testing_subscription_manager
+        manager.new_subscription = "fake_subscription"
+        with self.assertLogs() as logs_captured:
+            manager.subscription_is_valid()
+
+        expected_message = (
+            "The new subscription level provided is not "
+            "in the available subscriptions."
+        )
+        self.assertEqual(len(logs_captured.records), 1)
+        self.assertEqual(logs_captured.records[0].message, expected_message)
 
     def test_report_of_changes_returns_string(self):
         """

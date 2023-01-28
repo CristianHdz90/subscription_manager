@@ -46,9 +46,22 @@ class TestUpgradeSubscription(TestCase):
 
         self.assertTrue(upgrade_manager.upgrade_is_valid())
 
-    def test_upgrade_is_valid_raises_error(self):
+    def test_upgrade_is_valid_returns_false(self):
         """
-        Tests if the upgrade_is_valid method raises an
+        Tests if the upgrade_is_valid method returns
+        False when an upgrade is not valid.
+        """
+        upgrade_manager = self.upgrade_subscription_manager
+        upgrade_manager.subscriptions = subscription_levels
+
+        upgrade_manager.old_subscription = "high_subscription"
+        upgrade_manager.new_subscription = "low_subscription"
+
+        self.assertFalse(upgrade_manager.upgrade_is_valid())
+
+    def test_upgrade_is_valid_logs_an_error(self):
+        """
+        Tests if the upgrade_is_valid method logs an
         error when an upgrade is not valid.
         """
         upgrade_manager = self.upgrade_subscription_manager
@@ -57,7 +70,15 @@ class TestUpgradeSubscription(TestCase):
         upgrade_manager.old_subscription = "high_subscription"
         upgrade_manager.new_subscription = "low_subscription"
 
-        self.assertRaises(ValueError, upgrade_manager.upgrade_is_valid)
+        with self.assertLogs() as logs_captured:
+            upgrade_manager.upgrade_is_valid()
+
+        expected_message = (
+            f"Attempted to upgrade from {upgrade_manager.old_subscription} "
+            f"to {upgrade_manager.new_subscription}."
+        )
+        self.assertEqual(len(logs_captured.records), 1)
+        self.assertEqual(logs_captured.records[0].message, expected_message)
 
     def test_upgrade_method_gets_the_customer_data(self):
         """
@@ -120,15 +141,32 @@ class TestUpgradeSubscription(TestCase):
             subscription = upgrade_manager.customer_data["data"]["SUBSCRIPTION"]
             self.assertEqual(subscription, "premium")
 
-    def test_upgrade_method_returns_string(self):
+    def test_upgrade_method_returns_report_of_changes(self):
         """
-        Tests if the upgrade method returns a string.
+        Tests if the upgrade method returns a string with
+        the report of changes when the upgrade succeeds.
         """
         upgrade_manager = self.upgrade_subscription_manager
         upgrade_manager.new_subscription = "premium"
 
         kwargs = {"get": self.mock_response, "put": self.mock_response}
         with mock.patch.multiple("requests", **kwargs):
-            returned_value = upgrade_manager.upgrade()
+            report = upgrade_manager.upgrade()
 
-            self.assertEqual(str, type(returned_value))
+        expected_message = (
+            f"{upgrade_manager.customer_id} -- UPGRADED -- "
+            f"from {upgrade_manager.old_subscription} "
+            f"to {upgrade_manager.new_subscription}"
+        )
+        self.assertEqual(report, expected_message)
+
+    def test_upgrade_method_returns_error_string(self):
+        """
+        Tests if the upgrade method returns an error
+        string when the upgrade fails.
+        """
+        upgrade_manager = self.upgrade_subscription_manager
+        returned_message = upgrade_manager.upgrade()
+
+        expected_message = "Failed to upgrade."
+        self.assertEqual(returned_message, expected_message)

@@ -11,16 +11,18 @@ class MockResponse:  # pylint: disable=R0903
     that can be used for testing purposes.
     """
 
-    def __init__(self, status_code, response_data=None):
+    def __init__(self, status_code, reason="", response_data=None):
         """
         Initialize a new instance of the class with the given
         status code and response data.
 
         Attributes:
-        - status_code (int): The HTTP status code of the mock response.
+        - status_code (int):    The HTTP status code of the mock response.
+        - reason (str):         Short description of the HTTP response.
         - response_data (dict): Data to be returned in the response body.
         """
         self.status_code = status_code
+        self.reason = reason
         self._response_data = response_data or {}
 
     @property

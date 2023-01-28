@@ -46,9 +46,22 @@ class TestDowngradeSubscription(TestCase):
 
         self.assertTrue(downgrade_manager.downgrade_is_valid())
 
-    def test_downgrade_is_valid_raises_error(self):
+    def test_downgrade_is_valid_returns_false(self):
         """
-        Tests if the downgrade_is_valid method raises an
+        Tests if the downgrade_is_valid method returns
+        false when a downgrade is not valid.
+        """
+        downgrade_manager = self.downgrade_subscription_manager
+        downgrade_manager.subscriptions = subscription_levels
+
+        downgrade_manager.old_subscription = "low_subscription"
+        downgrade_manager.new_subscription = "high_subscription"
+
+        self.assertFalse(downgrade_manager.downgrade_is_valid())
+
+    def test_downgrade_is_valid_logs_an_error(self):
+        """
+        Tests if the downgrade_is_valid method logs an
         error when a downgrade is not valid.
         """
         downgrade_manager = self.downgrade_subscription_manager
@@ -57,7 +70,15 @@ class TestDowngradeSubscription(TestCase):
         downgrade_manager.old_subscription = "low_subscription"
         downgrade_manager.new_subscription = "high_subscription"
 
-        self.assertRaises(ValueError, downgrade_manager.downgrade_is_valid)
+        with self.assertLogs() as logs_captured:
+            downgrade_manager.downgrade_is_valid()
+
+        expected_message = (
+            f"Attempted to downgrade from {downgrade_manager.old_subscription} "
+            f"to {downgrade_manager.new_subscription}."
+        )
+        self.assertEqual(len(logs_captured.records), 1)
+        self.assertEqual(logs_captured.records[0].message, expected_message)
 
     def test_downgrade_method_gets_the_customer_data(self):
         """
@@ -121,15 +142,32 @@ class TestDowngradeSubscription(TestCase):
             subscription = downgrade_manager.customer_data["data"]["SUBSCRIPTION"]
             self.assertEqual(subscription, "free")
 
-    def test_downgrade_method_returns_string(self):
+    def test_downgrade_method_returns_report_of_changes(self):
         """
-        Tests if the downgrade method returns a string.
+        Tests if the downgrade method returns a string with
+        the report of changes when the downgrade succeeds.
         """
         downgrade_manager = self.downgrade_subscription_manager
         downgrade_manager.new_subscription = "free"
 
         kwargs = {"get": self.mock_response, "put": self.mock_response}
         with mock.patch.multiple("requests", **kwargs):
-            returned_value = downgrade_manager.downgrade()
+            report = downgrade_manager.downgrade()
 
-            self.assertEqual(str, type(returned_value))
+        expected_message = (
+            f"{downgrade_manager.customer_id} -- DOWNGRADED -- "
+            f"from {downgrade_manager.old_subscription} "
+            f"to {downgrade_manager.new_subscription}"
+        )
+        self.assertEqual(report, expected_message)
+
+    def test_downgrade_method_returns_error_string(self):
+        """
+        Tests if the downgrade method returns an error
+        string when the downgrade fails.
+        """
+        downgrade_manager = self.downgrade_subscription_manager
+        returned_message = downgrade_manager.downgrade()
+
+        expected_message = "Failed to downgrade."
+        self.assertEqual(returned_message, expected_message)
