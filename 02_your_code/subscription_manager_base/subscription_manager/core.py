@@ -20,13 +20,13 @@ class SubscriptionManager:
     ):
         """
         Attributes:
-        - customer_id (int): The ID of the customer.
-        - new_subscription (str): The new subscription plan for the customer.
+        - customer_id (int):           The ID of the customer.
+        - new_subscription (str):      The new subscription plan for the customer.
         - customer_data_api_url (str): The URL of the API used to retrieve customer data.
-        - subscriptions (dict): Dictionary with the available subscription plans and their levels.
-        - customer_data (dict): Dictionary to store the customer data.
-        - changes_sent (bool): Check to confirm when the changes were correctly sent to the API.
-        - old_subscription (str): The old subscription of the customer to be replaced.
+        - subscriptions (dict):        All the vailable subscription plans and their levels.
+        - customer_data (dict):        Dictionary to store the customer data.
+        - changes_sent (bool):         Check to confirm when the changes were sent to the API.
+        - old_subscription (str):      The old subscription of the customer to be replaced.
         """
         self.customer_id = customer_id
         self.new_subscription = new_subscription
