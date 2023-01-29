@@ -57,7 +57,8 @@ class SubscriptionManager:
                 self.old_subscription = self.customer_data["data"]["SUBSCRIPTION"]
             else:
                 message = (
-                    f"Failed to retrieve the customer data "
+                    f"Failed to retrieve the customer data, "
+                    f"(make sure the customer ID is correct) "
                     f"[{response.status_code} {response.reason}]."
                 )
                 logging.error(message)

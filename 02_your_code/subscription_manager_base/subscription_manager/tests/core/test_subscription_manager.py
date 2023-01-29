@@ -134,7 +134,9 @@ class TestSubscriptionManager(TestCase):  # pylint: disable=R0904
                 manager.get_customer_data()
 
         expected_message = (
-            f"Failed to retrieve the customer data [{status_code} {reason}]."
+            f"Failed to retrieve the customer data, "
+            f"(make sure the customer ID is correct) "
+            f"[{status_code} {reason}]."
         )
         self.assertEqual(len(logs_captured.records), 1)
         self.assertEqual(logs_captured.records[0].getMessage(), expected_message)
