@@ -5,6 +5,7 @@ Testing the django rest framework configuration
 from django.test import TestCase
 from rest_framework.test import APIClient
 
+
 class CustomerDataAPITestCase(TestCase):
     """
     Basic test case that asserts that we can actually call the API
@@ -15,4 +16,6 @@ class CustomerDataAPITestCase(TestCase):
         Asserts that calling the API actually works
         """
         client = APIClient()
-        client.post('/api/v1/customerdata/', {'id': '1234'}, format='json')
+        response = client.get("/api/v1/customerdata/")
+
+        self.assertEqual(response.status_code, 200)
