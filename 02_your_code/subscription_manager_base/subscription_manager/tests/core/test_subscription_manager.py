@@ -141,9 +141,38 @@ class TestSubscriptionManager(TestCase):  # pylint: disable=R0904
         self.assertEqual(len(logs_captured.records), 1)
         self.assertEqual(logs_captured.records[0].getMessage(), expected_message)
 
-    def test_get_customer_data_logs_an_error_when_customer_data_api_is_unavailable(
-        self,
-    ):
+    def test_get_customer_data_changes_exit_code_attribute_to_1(self):
+        """
+        Tests if the get_customer_data method changes the exit_code
+        attribute to 1 when it could not get the customer data from
+        the customer data API.
+        """
+        status_code = 404
+        reason = "Not Found"
+
+        mock_response = MockResponse(status_code, reason)
+        use_mock_response = mock.patch("requests.get", return_value=mock_response)
+
+        manager = self.testing_subscription_manager
+        manager.exit_code = 0
+
+        with use_mock_response:
+            manager.get_customer_data()
+
+        self.assertEqual(manager.exit_code, 1)
+
+    def test_get_customer_data_changes_exit_code_attribute_to_2(self):
+        """
+        Tests if the get_customer_data method changes the exit_code
+        attribute to 2 when the customer data API is not responding.
+        """
+        manager = self.testing_subscription_manager
+        manager.exit_code = 0
+        manager.get_customer_data()
+
+        self.assertEqual(manager.exit_code, 2)
+
+    def test_get_customer_data_logs_an_error_when_api_is_unavailable(self):
         """
         Tests if the get_customer_data method logs an error when
         the customer data API is not responding.
@@ -238,6 +267,25 @@ class TestSubscriptionManager(TestCase):  # pylint: disable=R0904
         self.assertEqual(len(logs_captured.records), 1)
         self.assertEqual(logs_captured.records[0].message, expected_message)
 
+    def test_send_changes_to_customer_data_api_changes_exit_code_attribute_to_6(self):
+        """
+        Tests if the send_changes_to_customer_data_api method changes the exit_code
+        attribute to 6 when the API did not apply the changes to the customer data.
+        """
+        status_code = 400
+        reason = "Bad Request"
+
+        mock_response = MockResponse(status_code, reason)
+        use_mock_response = mock.patch("requests.put", return_value=mock_response)
+
+        manager = self.testing_subscription_manager
+        manager.exit_code = 0
+
+        with use_mock_response:
+            manager.send_changes_to_customer_data_api()
+
+        self.assertEqual(manager.exit_code, 6)
+
     def test_send_changes_to_customer_data_api_updates_the_changes_sent_attribute_to_true(
         self,
     ):
@@ -274,6 +322,17 @@ class TestSubscriptionManager(TestCase):  # pylint: disable=R0904
         self.assertEqual(len(logs_captured.records), 1)
         self.assertEqual(logs_captured.records[0].getMessage(), expected_message)
 
+    def test_send_changes_to_customer_data_api_changes_exit_code_attribute_to_2(self):
+        """
+        Tests if the send_changes_to_customer_data_api method changes the exit_code
+        attribute to 2 when the customer data API is not responding.
+        """
+        manager = self.testing_subscription_manager
+        manager.exit_code = 0
+        manager.send_changes_to_customer_data_api()
+
+        self.assertEqual(manager.exit_code, 2)
+
     def test_subscription_is_valid_returns_true(self):
         """
         Tests if the subscription_is_valid method returns
@@ -293,6 +352,19 @@ class TestSubscriptionManager(TestCase):  # pylint: disable=R0904
         manager = self.testing_subscription_manager
         manager.new_subscription = "fake_subscription"
         self.assertFalse(manager.subscription_is_valid())
+
+    def test_subscription_is_valid_changes_exit_code_attribute_to_3(self):
+        """
+        Tests if the subscription_is_valid method changes the exit_code
+        attribute to 3 when the new subscription is not in the group
+        of available subscriptions.
+        """
+        manager = self.testing_subscription_manager
+        manager.new_subscription = "fake_subscription"
+        manager.exit_code = 0
+        manager.subscription_is_valid()
+
+        self.assertEqual(manager.exit_code, 3)
 
     def test_subscription_is_valid_logs_an_error(self):
         """

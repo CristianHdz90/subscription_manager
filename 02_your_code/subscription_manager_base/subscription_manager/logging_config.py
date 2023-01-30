@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 """
 Additional configurations for the logging module.
 """
 import logging
 
-logging.basicConfig(format="%(levelname)s: %(message)s")
+logging.basicConfig(filename="error.log", format="%(message)s", filemode="w")

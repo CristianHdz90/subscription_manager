@@ -46,4 +46,5 @@ subscription_manager_attributes = [
     "customer_data",
     "old_subscription",
     "changes_sent",
+    "exit_code",
 ]

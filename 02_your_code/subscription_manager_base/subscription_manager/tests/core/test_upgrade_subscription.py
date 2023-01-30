@@ -15,7 +15,7 @@ from subscription_manager_base.subscription_manager.tests.mocks.mock_objects imp
 )
 
 
-class TestUpgradeSubscription(TestCase):
+class UpgradeSubscriptionTestCase(TestCase):
     """
     Tests for the upgrade subscription class.
     """
@@ -58,6 +58,22 @@ class TestUpgradeSubscription(TestCase):
         upgrade_manager.new_subscription = "low_subscription"
 
         self.assertFalse(upgrade_manager.upgrade_is_valid())
+
+    def test_upgrade_is_valid_changes_exit_code_attribute_to_4(self):
+        """
+        Tests if the upgrade_is_valid method changes the exit_code
+        attribute to 4 when an upgrade is not valid.
+        """
+        upgrade_manager = self.upgrade_subscription_manager
+        upgrade_manager.subscriptions = subscription_levels
+
+        upgrade_manager.old_subscription = "high_subscription"
+        upgrade_manager.new_subscription = "low_subscription"
+        upgrade_manager.exit_code = 0
+
+        upgrade_manager.upgrade_is_valid()
+
+        self.assertEqual(upgrade_manager.exit_code, 4)
 
     def test_upgrade_is_valid_logs_an_error(self):
         """
@@ -160,13 +176,13 @@ class TestUpgradeSubscription(TestCase):
         )
         self.assertEqual(report, expected_message)
 
-    def test_upgrade_method_returns_error_string(self):
+    def test_upgrade_method_calls_system_exit_when_upgrade_fails(self):
         """
-        Tests if the upgrade method returns an error
-        string when the upgrade fails.
+        Tests if the upgrade method calls the 'sys.exit()'
+        method when the upgrade fails.
         """
         upgrade_manager = self.upgrade_subscription_manager
-        returned_message = upgrade_manager.upgrade()
+        with self.assertRaises(SystemExit) as c_manager:
+            upgrade_manager.upgrade()
 
-        expected_message = "Failed to upgrade."
-        self.assertEqual(returned_message, expected_message)
+        self.assertTrue(c_manager.exception.code != 0)

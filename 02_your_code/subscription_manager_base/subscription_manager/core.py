@@ -3,13 +3,14 @@
 Core classes of the subscription manager library.
 """
 import json
+import sys
 
 import requests
 from subscription_manager_base.subscription_manager.logging_config import logging
 from subscription_manager_base.subscription_manager.utils import get_standard_datetime
 
 
-class SubscriptionManager:
+class SubscriptionManager:  # pylint: disable=too-many-instance-attributes
     """
     The SubscriptionManager class is used for managing customer subscriptions.
     Is the base class for UpgradeSubscription and DowngradeSubscription.
@@ -25,8 +26,9 @@ class SubscriptionManager:
         - customer_data_api_url (str): The URL of the API used to retrieve customer data.
         - subscriptions (dict):        All the vailable subscription plans and their levels.
         - customer_data (dict):        Dictionary to store the customer data.
-        - changes_sent (bool):         Check to confirm when the changes were sent to the API.
         - old_subscription (str):      The old subscription of the customer to be replaced.
+        - changes_sent (bool):         Check to confirm when the changes were sent to the API.
+        - exit_code (int):             Exit code on error.
         """
         self.customer_id = customer_id
         self.new_subscription = new_subscription
@@ -35,6 +37,7 @@ class SubscriptionManager:
         self.customer_data = {}
         self.old_subscription = ""
         self.changes_sent = False
+        self.exit_code = 1
 
     def get_url(self):
         """
@@ -61,12 +64,14 @@ class SubscriptionManager:
                     f"(make sure the customer ID is correct) "
                     f"[{response.status_code} {response.reason}]."
                 )
+                self.exit_code = 1
                 logging.error(message)
         except requests.exceptions.RequestException:
             message = (
                 "The customer data API is currently "
                 "unavailable, please try again later."
             )
+            self.exit_code = 2
             logging.error(message)
 
     def delete_item(self, key):
@@ -96,12 +101,14 @@ class SubscriptionManager:
                     f"Failed to update the customer data "
                     f"[{response.status_code} {response.reason}]."
                 )
+                self.exit_code = 6
                 logging.error(message)
         except requests.exceptions.RequestException:
             message = (
                 "The customer data API is currently "
                 "unavailable, please try again later."
             )
+            self.exit_code = 2
             logging.error(message)
 
     def subscription_is_valid(self):
@@ -115,6 +122,7 @@ class SubscriptionManager:
             "The new subscription level provided is not "
             "in the available subscriptions."
         )
+        self.exit_code = 3
         logging.error(message)
         return False
 
@@ -164,6 +172,7 @@ class UpgradeSubscription(SubscriptionManager):
             f"Attempted to upgrade from {self.old_subscription} "
             f"to {self.new_subscription}."
         )
+        self.exit_code = 4
         logging.error(message)
         return False
 
@@ -182,7 +191,7 @@ class UpgradeSubscription(SubscriptionManager):
                 self.send_changes_to_customer_data_api()
                 if self.changes_sent:
                     return self.report_of_changes("UPGRADED")
-        return "Failed to upgrade."
+        sys.exit(self.exit_code)
 
 
 class DowngradeSubscription(SubscriptionManager):
@@ -206,6 +215,7 @@ class DowngradeSubscription(SubscriptionManager):
             f"Attempted to downgrade from {self.old_subscription} "
             f"to {self.new_subscription}."
         )
+        self.exit_code = 5
         logging.error(message)
         return False
 
@@ -227,4 +237,4 @@ class DowngradeSubscription(SubscriptionManager):
                 self.send_changes_to_customer_data_api()
                 if self.changes_sent:
                     return self.report_of_changes("DOWNGRADED")
-        return "Failed to downgrade."
+        sys.exit(self.exit_code)

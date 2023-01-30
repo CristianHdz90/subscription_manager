@@ -15,7 +15,7 @@ from subscription_manager_base.subscription_manager.tests.mocks.mock_objects imp
 )
 
 
-class TestDowngradeSubscription(TestCase):
+class DowngradeSubscriptionTestCase(TestCase):
     """
     Tests for the downgrade subscription class.
     """
@@ -58,6 +58,22 @@ class TestDowngradeSubscription(TestCase):
         downgrade_manager.new_subscription = "high_subscription"
 
         self.assertFalse(downgrade_manager.downgrade_is_valid())
+
+    def test_downgrade_is_valid_changes_exit_code_attribute_to_5(self):
+        """
+        Tests if the downgrade_is_valid method changes the exit_code
+        attribute to 5 when a downgrade is not valid.
+        """
+        downgrade_manager = self.downgrade_subscription_manager
+        downgrade_manager.subscriptions = subscription_levels
+
+        downgrade_manager.old_subscription = "low_subscription"
+        downgrade_manager.new_subscription = "high_subscription"
+        downgrade_manager.exit_code = 0
+
+        downgrade_manager.downgrade_is_valid()
+
+        self.assertEqual(downgrade_manager.exit_code, 5)
 
     def test_downgrade_is_valid_logs_an_error(self):
         """
@@ -161,13 +177,13 @@ class TestDowngradeSubscription(TestCase):
         )
         self.assertEqual(report, expected_message)
 
-    def test_downgrade_method_returns_error_string(self):
+    def test_downgrade_method_calls_system_exit_when_downgrade_fails(self):
         """
-        Tests if the downgrade method returns an error
-        string when the downgrade fails.
+        Tests if the downgrade method calls the 'sys.exit()'
+        method when the downgrade fails.
         """
         downgrade_manager = self.downgrade_subscription_manager
-        returned_message = downgrade_manager.downgrade()
+        with self.assertRaises(SystemExit) as c_manager:
+            downgrade_manager.downgrade()
 
-        expected_message = "Failed to downgrade."
-        self.assertEqual(returned_message, expected_message)
+        self.assertTrue(c_manager.exception.code != 0)
