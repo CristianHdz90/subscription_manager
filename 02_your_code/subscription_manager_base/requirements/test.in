@@ -1,0 +1,7 @@
+# Requirements for testing and code quality.
+-r base.txt
+
+black                       # For code formatting.
+pylint                      # For code linting.
+pytest-cov                  # For measuring test coverage.
+pytest                      # For running tests.
